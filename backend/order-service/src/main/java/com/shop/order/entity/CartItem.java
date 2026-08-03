@@ -1,0 +1,18 @@
+package com.shop.order.entity;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.shop.common.entity.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("cart_item")
+public class CartItem extends BaseEntity {
+
+    private Long userId;
+    private Long skuId;
+    private Integer quantity;
+    private Integer checked;
+}
+

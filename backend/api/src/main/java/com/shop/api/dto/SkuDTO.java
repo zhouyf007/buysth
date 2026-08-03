@@ -1,0 +1,19 @@
+package com.shop.api.dto;
+
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Data
+public class SkuDTO {
+
+    private Long id;
+    private Long productId;
+    private String specName;
+    private String specValue;
+    private BigDecimal price;
+    private Integer stock;
+    private String image;
+    private Integer status;
+}
+

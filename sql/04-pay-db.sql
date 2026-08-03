@@ -1,0 +1,21 @@
+USE pay_db;
+
+DROP TABLE IF EXISTS payment;
+
+CREATE TABLE payment (
+    id BIGINT PRIMARY KEY,
+    pay_no VARCHAR(40) NOT NULL UNIQUE,
+    order_no VARCHAR(40) NOT NULL,
+    user_id BIGINT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    channel VARCHAR(30) NOT NULL,
+    subject VARCHAR(255),
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    notify_data TEXT,
+    paid_time DATETIME,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted TINYINT NOT NULL DEFAULT 0,
+    INDEX idx_order_no(order_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

@@ -1,0 +1,72 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  config:
+    import: optional:nacos:gateway.yml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+      config:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        import-check:
+          enabled: false
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**,/api/admin/users/**,/api/admin/roles/**,/api/admin/menus/**
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/product/**,/api/admin/categories/**,/api/admin/products/**
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/order/**,/api/admin/orders/**
+        - id: pay-service
+          uri: lb://pay-service
+          predicates:
+            - Path=/api/pay/**,/api/admin/payments/**
+        - id: seckill-service
+          uri: lb://seckill-service
+          predicates:
+            - Path=/api/seckill/**,/api/admin/activities/**,/api/admin/seckill-products/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@userKeyResolver}"
+        - id: logistics-service
+          uri: lb://logistics-service
+          predicates:
+            - Path=/api/logistics/**,/api/admin/shipments/**
+        - id: notify-service
+          uri: lb://notify-service
+          predicates:
+            - Path=/api/notify/**,/api/admin/announcements/**,/api/admin/messages/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6380}
+
+shop:
+  jwt:
+    secret: shop-demo-jwt-secret-key-please-change-2026
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <rect width="400" height="400" rx="20" fill="#eefaf3"/>
+  <rect x="80" y="60" width="240" height="280" rx="20" fill="#1f2328"/>
+  <rect x="94" y="76" width="212" height="248" rx="12" fill="#f8f8f8"/>
+  <rect x="120" y="110" width="120" height="14" rx="7" fill="#ff5a1f"/>
+  <rect x="120" y="136" width="160" height="10" rx="5" fill="#e8e8e8"/>
+  <circle cx="200" cy="200" r="40" fill="#e8f5ee"/>
+  <text x="200" y="330" text-anchor="middle" font-size="18" font-family="PingFang SC, Microsoft YaHei" fill="#1f2328">小米平板 6 Pro</text>
+</svg>
+
