@@ -1,10 +1,12 @@
 package com.shop.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shop.api.dto.OrderInfoDTO;
 import com.shop.api.dto.PromotionDTO;
+import com.shop.api.dto.SalesIncreaseRequest;
 import com.shop.api.dto.SeckillOrderRequest;
 import com.shop.api.dto.SkuDTO;
 import com.shop.api.dto.StockLockRequest;
@@ -20,6 +22,8 @@ import com.shop.order.dto.CreateOrderResult;
 import com.shop.order.dto.MonthlyOrderStat;
 import com.shop.order.dto.OrderCreateRequest;
 import com.shop.order.dto.OrderVO;
+import com.shop.order.dto.PromotionPreviewRequest;
+import com.shop.order.dto.PromotionPreviewResponse;
 import com.shop.order.dto.StatusStat;
 import com.shop.order.entity.OrderItem;
 import com.shop.order.entity.OrderStatusLog;
@@ -132,6 +136,7 @@ public class OrderService {
             order.setPayTime(paidTime == null ? LocalDateTime.now() : paidTime);
             ordersMapper.updateById(order);
             logStatus(order.getId(), orderNo, STATUS_PENDING_PAY, STATUS_PAID, "system", "支付成功");
+            increaseSalesForOrder(orderNo);
         }
     }
 
@@ -176,6 +181,84 @@ public class OrderService {
     }
 
     @Transactional
+    public void deleteUserOrder(Long userId, String orderNo) {
+        Orders order = getByOrderNo(orderNo);
+        if (!order.getUserId().equals(userId)) {
+            throw new BizException(403, "无权操作该订单");
+        }
+        if (STATUS_PENDING_PAY.equals(order.getStatus())) {
+            doCancel(order, String.valueOf(userId), "用户删除订单");
+        }
+        ordersMapper.softDeleteByUser(orderNo, userId);
+    }
+
+    @Transactional
+    public void restoreUserOrder(Long userId, String orderNo) {
+        int rows = ordersMapper.restoreByUser(orderNo, userId);
+        if (rows == 0) {
+            throw new BizException(404, "订单不存在");
+        }
+    }
+
+    public PageResult<OrderVO> userDeletedPage(Long userId, long current, long size) {
+        IPage<Orders> page = ordersMapper.selectDeletedPage(new Page<>(current, size), userId);
+        return PageResult.of(toVOs(page.getRecords()), page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    @Transactional
+    public void adminDeleteOrders(List<String> orderNos, String operator) {
+        for (String orderNo : orderNos) {
+            try {
+                Orders order = getByOrderNo(orderNo);
+                if (STATUS_PENDING_PAY.equals(order.getStatus())) {
+                    doCancel(order, operator, "管理员删除订单");
+                }
+            } catch (Exception ignored) {
+                // 已删除或不存在则跳过
+            }
+        }
+        ordersMapper.softDeleteBatch(orderNos);
+    }
+
+    @Transactional
+    public void applyPromotion(Long userId, String orderNo, String promotionCode) {
+        Orders order = getByOrderNo(orderNo);
+        if (!order.getUserId().equals(userId)) {
+            throw new BizException(403, "无权操作该订单");
+        }
+        if (!STATUS_PENDING_PAY.equals(order.getStatus())) {
+            throw new BizException("订单当前状态不能使用优惠码");
+        }
+        if (promotionCode == null || promotionCode.isBlank()) {
+            throw new BizException("请输入优惠码");
+        }
+        BigDecimal discount = applyPromotion(promotionCode, order.getTotalAmount());
+        order.setDiscountAmount(discount);
+        order.setPayAmount(order.getTotalAmount().subtract(discount).max(BigDecimal.ZERO));
+        ordersMapper.updateById(order);
+    }
+
+    public PromotionPreviewResponse previewPromotion(PromotionPreviewRequest request) {
+        List<OrderCreateRequest.Item> items = request.getItems().stream().map(item -> {
+            OrderCreateRequest.Item line = new OrderCreateRequest.Item();
+            line.setSkuId(item.getSkuId());
+            line.setQuantity(item.getQuantity());
+            return line;
+        }).collect(Collectors.toList());
+        List<OrderLine> lines = buildLines(items);
+        BigDecimal total = lines.stream().map(line -> line.subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal discount = BigDecimal.ZERO;
+        if (request.getPromotionCode() != null && !request.getPromotionCode().isBlank()) {
+            discount = applyPromotion(request.getPromotionCode(), total);
+        }
+        PromotionPreviewResponse response = new PromotionPreviewResponse();
+        response.setTotalAmount(total);
+        response.setDiscountAmount(discount);
+        response.setPayAmount(total.subtract(discount).max(BigDecimal.ZERO));
+        return response;
+    }
+
+    @Transactional
     public void updateAddress(Long userId, String orderNo, AddressDTO address) {
         Orders order = getByOrderNo(orderNo);
         if (!order.getUserId().equals(userId)) {
@@ -194,6 +277,7 @@ public class OrderService {
         Page<Orders> page = ordersMapper.selectPage(new Page<>(current, size),
                 new LambdaQueryWrapper<Orders>()
                         .eq(Orders::getUserId, userId)
+                        .eq(Orders::getUserDeleted, 0)
                         .eq(StringUtils.hasText(status), Orders::getStatus, status)
                         .orderByDesc(Orders::getCreateTime));
         return PageResult.of(toVOs(page.getRecords()), page.getTotal(), page.getCurrent(), page.getSize());
@@ -203,6 +287,7 @@ public class OrderService {
         Page<Orders> page = ordersMapper.selectPage(new Page<>(current, size),
                 new LambdaQueryWrapper<Orders>()
                         .eq(userId != null, Orders::getUserId, userId)
+                        .eq(Orders::getAdminDeleted, 0)
                         .eq(StringUtils.hasText(status), Orders::getStatus, status)
                         .and(StringUtils.hasText(keyword), w -> w.like(Orders::getOrderNo, keyword)
                                 .or().like(Orders::getReceiverName, keyword)
@@ -304,17 +389,19 @@ public class OrderService {
             if (item.getQuantity() > sku.getStock()) {
                 throw new BizException("商品库存不足");
             }
-            ProductNameHolder name = new ProductNameHolder("商品");
+            ProductInfoHolder info = new ProductInfoHolder("商品", null);
             try {
                 var productResult = productClient.getProduct(sku.getProductId());
                 if (productResult.isSuccess() && productResult.getData() != null) {
-                    name.value = productResult.getData().getName();
+                    info.name = productResult.getData().getName();
+                    info.image = productResult.getData().getMainImage();
                 }
             } catch (Exception ignored) {
                 // 名称回退
             }
-            lines.add(new OrderLine(sku.getId(), sku.getProductId(), name.value,
-                    sku.getSpecName() + " " + sku.getSpecValue(), sku.getImage(), sku.getPrice(), item.getQuantity()));
+            String image = sku.getImage() == null || sku.getImage().isBlank() ? info.image : sku.getImage();
+            lines.add(new OrderLine(sku.getId(), sku.getProductId(), info.name,
+                    sku.getSpecName() + " " + sku.getSpecValue(), image, sku.getPrice(), item.getQuantity()));
         }
         return lines;
     }
@@ -484,11 +571,31 @@ public class OrderService {
         }
     }
 
-    private static class ProductNameHolder {
-        String value;
+    private void increaseSalesForOrder(String orderNo) {
+        try {
+            List<OrderItem> items = orderItemMapper.selectList(new LambdaQueryWrapper<OrderItem>()
+                    .eq(OrderItem::getOrderNo, orderNo));
+            SalesIncreaseRequest request = new SalesIncreaseRequest();
+            request.setOrderNo(orderNo);
+            request.setItems(items.stream().map(item -> {
+                SalesIncreaseRequest.Item line = new SalesIncreaseRequest.Item();
+                line.setProductId(item.getProductId());
+                line.setQuantity(item.getQuantity());
+                return line;
+            }).collect(Collectors.toList()));
+            productClient.increaseSales(request);
+        } catch (Exception e) {
+            log.warn("increase sales failed, orderNo={}", orderNo, e);
+        }
+    }
 
-        ProductNameHolder(String value) {
-            this.value = value;
+    private static class ProductInfoHolder {
+        String name;
+        String image;
+
+        ProductInfoHolder(String name, String image) {
+            this.name = name;
+            this.image = image;
         }
     }
 }

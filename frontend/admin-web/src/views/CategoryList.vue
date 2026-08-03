@@ -36,7 +36,16 @@
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑分类' : '新增分类'" width="480px">
       <el-form :model="form" label-width="80px">
         <el-form-item label="名称"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="图标"><el-input v-model="form.icon" placeholder="/images/categories/phone.svg" /></el-form-item>
+        <el-form-item label="图标">
+          <div class="icon-upload">
+            <el-upload :show-file-list="false" :http-request="uploadIcon">
+              <el-button>上传图标</el-button>
+            </el-upload>
+            <img v-if="form.icon" :src="form.icon" class="thumb" :alt="form.name" />
+            <span v-else class="icon-fallback">{{ (form.name || '类').slice(0, 1) }}</span>
+            <el-input v-model="form.icon" placeholder="图标地址" style="flex: 1" />
+          </div>
+        </el-form-item>
         <el-form-item label="排序"><el-input-number v-model="form.sort" :min="0" /></el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
@@ -53,7 +62,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { categoryApi } from '../api'
+import { categoryApi, productApi } from '../api'
 
 const categories = ref([])
 const loading = ref(false)
@@ -72,6 +81,13 @@ const load = async () => {
 const openDialog = row => {
   Object.assign(form, row ? { ...row } : { id: null, name: '', icon: '', sort: 0, status: 1, parentId: 0 })
   dialogVisible.value = true
+}
+
+const uploadIcon = async options => {
+  const formData = new FormData()
+  formData.append('file', options.file)
+  form.icon = await productApi.upload(formData, 'icon')
+  ElMessage.success('图标上传成功')
 }
 
 const save = async () => {
@@ -105,5 +121,12 @@ onMounted(load)
   background: #fff2ec;
   color: #ff5a1f;
   font-weight: 700;
+}
+
+.icon-upload {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
 }
 </style>

@@ -8,10 +8,12 @@ import com.shop.auth.entity.SysMenu;
 import com.shop.auth.entity.SysRole;
 import com.shop.auth.entity.SysRoleMenu;
 import com.shop.auth.entity.SysUser;
+import com.shop.auth.entity.SysUserRole;
 import com.shop.auth.mapper.SysMenuMapper;
 import com.shop.auth.mapper.SysRoleMapper;
 import com.shop.auth.mapper.SysRoleMenuMapper;
 import com.shop.auth.mapper.SysUserMapper;
+import com.shop.auth.mapper.SysUserRoleMapper;
 import com.shop.common.exception.BizException;
 import com.shop.common.result.PageResult;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class AdminService {
     private final SysRoleMenuMapper roleMenuMapper;
     private final SysMenuMapper menuMapper;
     private final AuthService authService;
+    private final SysUserRoleMapper userRoleMapper;
 
     public PageResult<SysUser> pageUsers(long current, long size, String keyword) {
         Page<SysUser> page = userMapper.selectPage(new Page<>(current, size),
@@ -45,6 +48,12 @@ public class AdminService {
         return PageResult.of(page);
     }
 
+    public List<Long> userRoleIds(Long userId) {
+        return userRoleMapper.selectList(new LambdaQueryWrapper<SysUserRole>()
+                        .eq(SysUserRole::getUserId, userId))
+                .stream().map(SysUserRole::getRoleId).collect(Collectors.toList());
+    }
+
     public void updateUserStatus(Long userId, Integer status) {
         SysUser user = userMapper.selectById(userId);
         if (user == null) {
@@ -55,10 +64,19 @@ public class AdminService {
     }
 
     @Transactional
-    public void updateUserRole(Long userId, List<Long> roleIds) {
+    public void updateUserRole(Long userId, List<Long> roleIds, List<String> operatorRoles) {
         SysUser user = userMapper.selectById(userId);
         if (user == null) {
             throw new BizException(404, "用户不存在");
+        }
+        if (roleIds != null && !operatorRoles.contains("SUPER_ADMIN")) {
+            boolean hasSuper = roleIds.stream().anyMatch(roleId -> {
+                SysRole role = roleMapper.selectById(roleId);
+                return role != null && "SUPER_ADMIN".equals(role.getCode());
+            });
+            if (hasSuper) {
+                throw new BizException("当前管理员无权分配超级管理员角色");
+            }
         }
         authService.updateRoles(userId, roleIds);
     }
@@ -98,7 +116,7 @@ public class AdminService {
         role.setName(vo.getName());
         role.setDescription(vo.getDescription());
         roleMapper.updateById(role);
-        roleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>().eq(SysRoleMenu::getRoleId, id));
+        roleMenuMapper.deleteByRoleId(id);
         saveRoleMenus(id, vo.getMenuIds());
     }
 
@@ -108,7 +126,7 @@ public class AdminService {
             throw new BizException("超级管理员角色不可删除");
         }
         roleMapper.deleteById(id);
-        roleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>().eq(SysRoleMenu::getRoleId, id));
+        roleMenuMapper.deleteByRoleId(id);
     }
 
     private void saveRoleMenus(Long roleId, List<Long> menuIds) {
@@ -171,7 +189,7 @@ public class AdminService {
     @Transactional
     public void deleteMenu(Long id) {
         menuMapper.deleteById(id);
-        roleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>().eq(SysRoleMenu::getMenuId, id));
+        roleMenuMapper.deleteByMenuId(id);
     }
 
     private void applyMenu(SysMenu menu, MenuVO vo) {

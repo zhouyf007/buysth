@@ -16,5 +16,6 @@ public class NotifyMessage extends BaseEntity {
     private String title;
     private String content;
     private Integer readStatus;
+    private Integer userDeleted;
+    private Integer adminDeleted;
 }
-

@@ -103,6 +103,12 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         if (method == HttpMethod.POST && path.startsWith("/api/pay/mock/notify/")) {
             return true;
         }
+        if (method == HttpMethod.GET && path.startsWith("/api/auth/avatar/files/")) {
+            return true;
+        }
+        if (method == HttpMethod.POST && path.startsWith("/api/auth/avatar/upload")) {
+            return true;
+        }
         return false;
     }
 

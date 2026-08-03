@@ -79,7 +79,10 @@ const openDialog = async row => {
 }
 
 const save = async () => {
-  form.menuIds = treeRef.value?.getCheckedKeys() || []
+  form.menuIds = [
+    ...(treeRef.value?.getCheckedKeys() || []),
+    ...(treeRef.value?.getHalfCheckedKeys() || [])
+  ]
   if (form.id) {
     await roleApi.update(form.id, form)
   } else {
@@ -98,4 +101,3 @@ const remove = async row => {
 
 onMounted(load)
 </script>
-

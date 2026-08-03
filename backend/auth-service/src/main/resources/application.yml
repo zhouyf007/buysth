@@ -36,6 +36,8 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 shop:
+  upload:
+    path: ${UPLOAD_PATH:D:/buysth/uploads/avatar}
   jwt:
     secret: shop-demo-jwt-secret-key-please-change-2026
     access-expire-minutes: 30
@@ -46,4 +48,3 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
-

@@ -7,6 +7,7 @@
       <button :class="{ active: status === 'PAID' }" @click="switchStatus('PAID')">已支付</button>
       <button :class="{ active: status === 'SHIPPED' }" @click="switchStatus('SHIPPED')">已发货</button>
       <button :class="{ active: status === 'COMPLETED' }" @click="switchStatus('COMPLETED')">已完成</button>
+      <button :class="{ active: trashMode }" @click="switchTrash">回收站</button>
     </div>
     <div v-if="orders.length" class="order-list">
       <div v-for="o in orders" :key="o.orderNo" class="panel order-card" @click="$router.push(`/orders/${o.orderNo}`)">
@@ -23,6 +24,10 @@
             <span class="price">¥{{ o.payAmount }}</span>
             <span class="muted">{{ formatTime(o.createTime) }}</span>
           </div>
+        </div>
+        <div class="order-actions" @click.stop>
+          <button v-if="!trashMode" class="link-btn danger" @click="removeOrder(o)">删除</button>
+          <button v-else class="link-btn" @click="restoreOrder(o)">恢复</button>
         </div>
       </div>
     </div>
@@ -41,19 +46,40 @@ import { orderApi } from '../api'
 
 const orders = ref([])
 const status = ref('')
+const trashMode = ref(false)
 const current = ref(1)
 const pages = ref(1)
 
 const load = async page => {
   current.value = page
-  const data = await orderApi.list({ current: page, size: 8, status: status.value || undefined })
+  const data = trashMode.value
+    ? await orderApi.deleted({ current: page, size: 8 })
+    : await orderApi.list({ current: page, size: 8, status: status.value || undefined })
   orders.value = data.records
   pages.value = data.pages
 }
 
 const switchStatus = s => {
+  trashMode.value = false
   status.value = s
   load(1)
+}
+
+const switchTrash = () => {
+  trashMode.value = true
+  load(1)
+}
+
+const removeOrder = async order => {
+  if (!window.confirm(`确认删除订单 ${order.orderNo}？`)) return
+  await orderApi.deleteOrder(order.orderNo)
+  load(current.value)
+}
+
+const restoreOrder = async order => {
+  if (!window.confirm(`确认恢复订单 ${order.orderNo}？`)) return
+  await orderApi.restoreOrder(order.orderNo)
+  load(current.value)
 }
 
 const formatTime = t => (t || '').replace('T', ' ').slice(0, 16)
@@ -153,5 +179,24 @@ onMounted(() => load(1))
   align-items: center;
   margin-top: 20px;
 }
-</style>
 
+.order-actions {
+  border-top: 1px solid var(--line);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.link-btn {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.link-btn.danger {
+  color: #d33;
+}
+</style>

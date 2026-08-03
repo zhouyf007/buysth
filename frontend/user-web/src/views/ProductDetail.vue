@@ -24,7 +24,7 @@
           <div><dt>产地</dt><dd>{{ product.region }}</dd></div>
           <div><dt>上新</dt><dd>{{ formatTime(product.publishDate) }}</dd></div>
           <div><dt>销量</dt><dd>{{ product.sales }}</dd></div>
-          <div><dt>评分</dt><dd>{{ product.rating }}</dd></div>
+          <div><dt>评分</dt><dd class="rating-value">{{ product.rating }}</dd></div>
         </dl>
         <div v-if="product.skus?.length" class="sku-group">
           <span class="sku-label">{{ product.skus[0].specName }}</span>
@@ -270,6 +270,10 @@ onMounted(async () => {
   margin: 4px 0 0;
   font-size: 13px;
   font-weight: 600;
+}
+
+.rating-value {
+  color: #f59e0b !important;
 }
 
 .sku-group {

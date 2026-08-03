@@ -21,7 +21,7 @@ export const productApi = {
   update: (id, data) => http.put(`/api/admin/products/${id}`, data),
   remove: id => http.delete(`/api/admin/products/${id}`),
   status: (id, status) => http.put(`/api/admin/products/${id}/status`, { status }),
-  upload: form => http.post('/api/admin/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+  upload: (form, type = 'product') => http.post('/api/admin/upload', form, { params: { type } })
 }
 
 export const orderApi = {
@@ -29,11 +29,15 @@ export const orderApi = {
   monthly: () => http.get('/api/admin/orders/monthly-stats'),
   statusStats: () => http.get('/api/admin/orders/status-stats'),
   detail: orderNo => http.get(`/api/admin/orders/${orderNo}`),
-  cancel: orderNo => http.post(`/api/admin/orders/${orderNo}/cancel`)
+  cancel: orderNo => http.post(`/api/admin/orders/${orderNo}/cancel`),
+  deleteOrder: orderNo => http.delete(`/api/admin/orders/${orderNo}`),
+  batchDelete: orderNos => http.post('/api/admin/orders/batch-delete', { orderNos })
 }
 
 export const paymentApi = {
-  page: params => http.get('/api/admin/payments', { params })
+  page: params => http.get('/api/admin/payments', { params }),
+  deletePayment: id => http.delete(`/api/admin/payments/${id}`),
+  batchDelete: ids => http.post('/api/admin/payments/batch-delete', { ids })
 }
 
 export const activityApi = {
@@ -51,13 +55,16 @@ export const logisticsApi = {
   page: params => http.get('/api/admin/shipments', { params }),
   create: orderNo => http.post('/api/admin/shipments', { orderNo }),
   track: (id, data) => http.post(`/api/admin/shipments/${id}/track`, data),
-  status: (id, status) => http.put(`/api/admin/shipments/${id}/status`, { status })
+  status: (id, status) => http.put(`/api/admin/shipments/${id}/status`, { status }),
+  deleteShipment: id => http.delete(`/api/admin/shipments/${id}`),
+  batchDelete: ids => http.post('/api/admin/shipments/batch-delete', { ids })
 }
 
 export const userApi = {
   page: params => http.get('/api/admin/users', { params }),
   status: (id, status) => http.put(`/api/admin/users/${id}/status`, { status }),
-  role: (id, roleIds) => http.put(`/api/admin/users/${id}/role`, { roleIds })
+  role: (id, roleIds) => http.put(`/api/admin/users/${id}/role`, { roleIds }),
+  roles: id => http.get(`/api/admin/users/${id}/roles`)
 }
 
 export const roleApi = {
@@ -79,5 +86,7 @@ export const announceApi = {
 }
 
 export const messageApi = {
-  page: params => http.get('/api/admin/messages', { params })
+  page: params => http.get('/api/admin/messages', { params }),
+  deleteMessage: id => http.delete(`/api/admin/messages/${id}`),
+  batchDelete: ids => http.post('/api/admin/messages/batch-delete', { ids })
 }

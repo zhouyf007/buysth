@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.shop.product.entity.Product;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,5 +43,7 @@ public interface ProductMapper extends BaseMapper<Product> {
                               @Param("startDate") LocalDateTime startDate,
                               @Param("endDate") LocalDateTime endDate,
                               @Param("sort") String sort);
-}
 
+    @Update("UPDATE product SET sales = sales + #{quantity} WHERE id = #{productId} AND deleted = 0")
+    int increaseSales(@Param("productId") Long productId, @Param("quantity") Integer quantity);
+}

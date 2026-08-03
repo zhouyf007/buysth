@@ -3,6 +3,7 @@
     <h2 class="page-title">订单管理</h2>
     <div class="table-toolbar">
       <el-input v-model="query.keyword" placeholder="订单号/收货人/电话" clearable style="width: 220px" @keyup.enter="load(1)" />
+      <el-input v-model="query.userId" placeholder="用户ID" clearable style="width: 130px" @keyup.enter="load(1)" />
       <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 140px">
         <el-option label="待支付" value="PENDING_PAY" />
         <el-option label="已支付" value="PAID" />
@@ -11,9 +12,11 @@
         <el-option label="已取消" value="CANCELLED" />
       </el-select>
       <el-button type="primary" @click="load(1)">查询</el-button>
+      <el-button type="danger" :disabled="!selected.length" @click="batchDelete">批量删除</el-button>
     </div>
     <el-card>
-      <el-table :data="records" v-loading="loading">
+      <el-table :data="records" v-loading="loading" @selection-change="onSelection">
+        <el-table-column type="selection" width="50" />
         <el-table-column prop="orderNo" label="订单号" min-width="190" />
         <el-table-column prop="userId" label="用户ID" width="90" />
         <el-table-column label="类型" width="90">
@@ -35,6 +38,11 @@
             <el-popconfirm v-if="row.status === 'PENDING_PAY'" title="确认取消该订单？" @confirm="cancel(row)">
               <template #reference>
                 <el-button link type="danger">取消</el-button>
+              </template>
+            </el-popconfirm>
+            <el-popconfirm title="确认删除该订单？" @confirm="remove(row)">
+              <template #reference>
+                <el-button link type="danger">删除</el-button>
               </template>
             </el-popconfirm>
           </template>
@@ -79,7 +87,8 @@ const total = ref(0)
 const loading = ref(false)
 const drawerVisible = ref(false)
 const current = ref(null)
-const query = reactive({ current: 1, size: 10, keyword: '', status: '' })
+const query = reactive({ current: 1, size: 10, keyword: '', status: '', userId: '' })
+const selected = ref([])
 
 const load = async page => {
   query.current = page || 1
@@ -88,7 +97,8 @@ const load = async page => {
     const data = await orderApi.page({
       current: query.current, size: query.size,
       keyword: query.keyword || undefined,
-      status: query.status || undefined
+      status: query.status || undefined,
+      userId: query.userId || undefined
     })
     records.value = data.records
     total.value = data.total
@@ -105,6 +115,23 @@ const view = async row => {
 const cancel = async row => {
   await orderApi.cancel(row.orderNo)
   ElMessage.success('订单已取消')
+  load(query.current)
+}
+
+const onSelection = rows => {
+  selected.value = rows
+}
+
+const remove = async row => {
+  await orderApi.deleteOrder(row.orderNo)
+  ElMessage.success('订单已删除')
+  load(query.current)
+}
+
+const batchDelete = async () => {
+  const orderNos = selected.value.map(r => r.orderNo)
+  await orderApi.batchDelete(orderNos)
+  ElMessage.success(`已删除 ${orderNos.length} 个订单`)
   load(query.current)
 }
 
@@ -132,4 +159,3 @@ onMounted(() => load(1))
   font-size: 12px;
 }
 </style>
-

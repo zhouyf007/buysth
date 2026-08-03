@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shop.api.dto.ProductDTO;
+import com.shop.api.dto.SalesIncreaseRequest;
 import com.shop.api.dto.SkuDTO;
 import com.shop.api.dto.StockLockRequest;
 import com.shop.api.dto.UserDTO;
@@ -178,6 +179,17 @@ public class ProductService {
         return skuMapper.restoreStock(request.getSkuId(), request.getQuantity()) == 1;
     }
 
+    public boolean increaseSales(SalesIncreaseRequest request) {
+        if (request.getItems() != null) {
+            request.getItems().forEach(item -> {
+                productMapper.increaseSales(item.getProductId(), item.getQuantity() == null ? 0 : item.getQuantity());
+                redisCache.delete(DETAIL_CACHE_PREFIX + item.getProductId());
+            });
+        }
+        redisCache.delete(HOT_CACHE_KEY);
+        return true;
+    }
+
     @Transactional
     public void addReview(Long productId, Long userId, Integer rating, String content) {
         Product product = productMapper.selectById(productId);
@@ -279,7 +291,7 @@ public class ProductService {
         applyForm(product, form);
         product.setSales(0);
         productMapper.insert(product);
-        saveSkus(product.getId(), form.getSkus());
+        saveSkus(product.getId(), form.getSkus(), product.getMainImage());
         redisCache.delete(HOT_CACHE_KEY);
     }
 
@@ -292,7 +304,7 @@ public class ProductService {
         applyForm(product, form);
         productMapper.updateById(product);
         skuMapper.delete(new LambdaQueryWrapper<ProductSku>().eq(ProductSku::getProductId, id));
-        saveSkus(id, form.getSkus());
+        saveSkus(id, form.getSkus(), product.getMainImage());
         invalidateProductCache(id);
     }
 
@@ -326,7 +338,7 @@ public class ProductService {
         product.setStatus(form.getStatus() == null ? 1 : form.getStatus());
     }
 
-    private void saveSkus(Long productId, List<ProductForm.SkuForm> skuForms) {
+    private void saveSkus(Long productId, List<ProductForm.SkuForm> skuForms, String defaultImage) {
         if (skuForms == null) {
             return;
         }
@@ -337,7 +349,7 @@ public class ProductService {
             sku.setSpecValue(form.getSpecValue());
             sku.setPrice(form.getPrice());
             sku.setStock(form.getStock() == null ? 0 : form.getStock());
-            sku.setImage(form.getImage());
+            sku.setImage(form.getImage() == null || form.getImage().isBlank() ? defaultImage : form.getImage());
             sku.setStatus(form.getStatus() == null ? 1 : form.getStatus());
             skuMapper.insert(sku);
         });

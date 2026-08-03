@@ -28,6 +28,8 @@ CREATE TABLE notify_message (
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted TINYINT NOT NULL DEFAULT 0,
+    user_deleted TINYINT NOT NULL DEFAULT 0,
+    admin_deleted TINYINT NOT NULL DEFAULT 0,
     INDEX idx_user(user_id, read_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

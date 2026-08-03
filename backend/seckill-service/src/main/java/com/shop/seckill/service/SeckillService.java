@@ -323,27 +323,37 @@ public class SeckillService {
     }
 
     private boolean publishOrder(Long activityId, SeckillProduct product, Long userId, String orderNo) {
-        try {
-            SkuDTO sku = getSku(product.getSkuId());
-            SeckillOrderRequest request = new SeckillOrderRequest();
-            request.setOrderNo(orderNo);
-            request.setUserId(userId);
-            request.setActivityId(activityId);
-            request.setSeckillProductId(product.getId());
-            request.setSkuId(product.getSkuId());
-            request.setProductId(product.getProductId());
-            request.setProductName(product.getProductName());
-            request.setSkuSpec(sku.getSpecName() + " " + sku.getSpecValue());
-            request.setImage(product.getImage());
-            request.setQuantity(1);
-            request.setSeckillPrice(product.getSeckillPrice());
-            rabbitTemplate.convertAndSend(MQConstants.TOPIC_EXCHANGE, MQConstants.KEY_SECKILL_ORDER_CREATED,
-                    objectMapper.writeValueAsString(request));
-            return true;
-        } catch (Exception e) {
-            log.error("publish seckill order failed, orderNo={}", orderNo, e);
-            return false;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                SkuDTO sku = getSku(product.getSkuId());
+                SeckillOrderRequest request = new SeckillOrderRequest();
+                request.setOrderNo(orderNo);
+                request.setUserId(userId);
+                request.setActivityId(activityId);
+                request.setSeckillProductId(product.getId());
+                request.setSkuId(product.getSkuId());
+                request.setProductId(product.getProductId());
+                request.setProductName(product.getProductName());
+                request.setSkuSpec(sku.getSpecName() + " " + sku.getSpecValue());
+                request.setImage(product.getImage());
+                request.setQuantity(1);
+                request.setSeckillPrice(product.getSeckillPrice());
+                rabbitTemplate.convertAndSend(MQConstants.TOPIC_EXCHANGE, MQConstants.KEY_SECKILL_ORDER_CREATED,
+                        objectMapper.writeValueAsString(request));
+                return true;
+            } catch (Exception e) {
+                if (attempt == 2) {
+                    log.error("publish seckill order failed after retries, orderNo={}", orderNo, e);
+                    return false;
+                }
+                try {
+                    Thread.sleep(500L * (attempt + 1));
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
+        return false;
     }
 
     private SkuDTO getSku(Long skuId) {

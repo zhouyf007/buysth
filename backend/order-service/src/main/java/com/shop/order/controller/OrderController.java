@@ -9,6 +9,8 @@ import com.shop.order.dto.CartItemVO;
 import com.shop.order.dto.CreateOrderResult;
 import com.shop.order.dto.OrderCreateRequest;
 import com.shop.order.dto.OrderVO;
+import com.shop.order.dto.PromotionPreviewRequest;
+import com.shop.order.dto.PromotionPreviewResponse;
 import com.shop.order.dto.UpdateCartRequest;
 import com.shop.order.service.CartService;
 import com.shop.order.service.OrderService;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/order")
@@ -69,6 +72,12 @@ public class OrderController {
         return Result.ok(orderService.userPage(UserContext.getUserId(), current, size, status));
     }
 
+    @GetMapping("/deleted")
+    public Result<PageResult<OrderVO>> deleted(@RequestParam(defaultValue = "1") long current,
+                                               @RequestParam(defaultValue = "10") long size) {
+        return Result.ok(orderService.userDeletedPage(UserContext.getUserId(), current, size));
+    }
+
     @GetMapping("/{orderNo}")
     public Result<OrderVO> detail(@PathVariable String orderNo) {
         return Result.ok(orderService.detail(UserContext.getUserId(), orderNo, false));
@@ -91,5 +100,27 @@ public class OrderController {
         orderService.updateAddress(UserContext.getUserId(), orderNo, address);
         return Result.ok();
     }
-}
 
+    @DeleteMapping("/{orderNo}")
+    public Result<Void> deleteOrder(@PathVariable String orderNo) {
+        orderService.deleteUserOrder(UserContext.getUserId(), orderNo);
+        return Result.ok();
+    }
+
+    @PostMapping("/{orderNo}/restore")
+    public Result<Void> restoreOrder(@PathVariable String orderNo) {
+        orderService.restoreUserOrder(UserContext.getUserId(), orderNo);
+        return Result.ok();
+    }
+
+    @PostMapping("/{orderNo}/promotion")
+    public Result<Void> applyPromotion(@PathVariable String orderNo, @RequestBody Map<String, String> body) {
+        orderService.applyPromotion(UserContext.getUserId(), orderNo, body.get("promotionCode"));
+        return Result.ok();
+    }
+
+    @PostMapping("/promotion/preview")
+    public Result<PromotionPreviewResponse> previewPromotion(@RequestBody PromotionPreviewRequest request) {
+        return Result.ok(orderService.previewPromotion(request));
+    }
+}

@@ -22,5 +22,5 @@ public class Payment extends BaseEntity {
     private String status;
     private String notifyData;
     private LocalDateTime paidTime;
+    private Integer adminDeleted;
 }
-

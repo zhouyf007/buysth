@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,16 +33,29 @@ public class UploadController {
     private String uploadPath;
 
     @PostMapping("/api/admin/upload")
-    public Result<String> upload(@RequestParam("file") MultipartFile file) {
+    public Result<String> upload(@RequestParam("file") MultipartFile file,
+                                 @RequestParam(defaultValue = "product") String type) {
         try {
             File dir = new File(uploadPath);
             if (!dir.exists() && !dir.mkdirs()) {
                 throw new IllegalStateException("无法创建上传目录");
             }
-            String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
-            String ext = original.contains(".") ? original.substring(original.lastIndexOf('.')) : "";
-            String filename = UUID.randomUUID().toString().replace("-", "") + ext;
-            file.transferTo(new File(dir, filename));
+            BufferedImage source = ImageIO.read(file.getInputStream());
+            if (source == null) {
+                return Result.fail(400, "仅支持 JPG/PNG 图片");
+            }
+            int size = "icon".equalsIgnoreCase(type) ? 128 : 512;
+            BufferedImage output = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = output.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int side = Math.min(source.getWidth(), source.getHeight());
+            int sx = (source.getWidth() - side) / 2;
+            int sy = (source.getHeight() - side) / 2;
+            g.drawImage(source, 0, 0, size, size, sx, sy, sx + side, sy + side, null);
+            g.dispose();
+            String filename = UUID.randomUUID().toString().replace("-", "") + ".png";
+            ImageIO.write(output, "png", new File(dir, filename));
             return Result.ok("/api/product/uploads/" + filename);
         } catch (Exception e) {
             log.error("Upload failed", e);
@@ -63,4 +80,3 @@ public class UploadController {
         }
     }
 }
-

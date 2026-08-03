@@ -20,5 +20,5 @@ public class Shipment extends BaseEntity {
     private String receiverName;
     private String receiverPhone;
     private String receiverAddress;
+    private Integer adminDeleted;
 }
-

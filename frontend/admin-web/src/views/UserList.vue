@@ -84,6 +84,7 @@ const openRole = async row => {
   roleVisible.value = true
   try {
     roles.value = await roleApi.list()
+    roleIds.value = await userApi.roles(row.id)
   } catch (e) { /* ignore */ }
 }
 
@@ -95,4 +96,3 @@ const saveRole = async () => {
 
 onMounted(() => load(1))
 </script>
-

@@ -29,5 +29,6 @@ public class Orders extends BaseEntity {
     private LocalDateTime payTime;
     private LocalDateTime shipTime;
     private LocalDateTime completeTime;
+    private Integer userDeleted;
+    private Integer adminDeleted;
 }
-

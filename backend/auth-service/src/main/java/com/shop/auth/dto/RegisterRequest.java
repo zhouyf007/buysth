@@ -3,6 +3,7 @@ package com.shop.auth.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 @Data
@@ -17,7 +18,11 @@ public class RegisterRequest {
     private String password;
 
     private String nickname;
+    @Pattern(regexp = "^$|^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
-    private String email;
-}
 
+    @Pattern(regexp = "^$|^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$", message = "邮箱格式不正确")
+    private String email;
+
+    private String avatar;
+}

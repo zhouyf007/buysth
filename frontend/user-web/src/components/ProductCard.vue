@@ -10,6 +10,7 @@
       <div class="meta">
         <span>{{ product.region }}</span>
         <span>已售 {{ product.sales }}</span>
+        <span>上新 {{ formatTime(product.publishDate) }}</span>
       </div>
     </div>
   </RouterLink>
@@ -17,6 +18,8 @@
 
 <script setup>
 defineProps({ product: { type: Object, required: true } })
+
+const formatTime = t => (t || '').replace('T', ' ').slice(0, 10)
 </script>
 
 <style scoped>

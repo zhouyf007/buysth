@@ -107,3 +107,23 @@ INSERT INTO product_sku (id, product_id, spec_name, spec_value, price, stock, im
     (214, 110, '表带', '黑色硅胶', 399.00, 300, '/images/products/watch-xiaomi8.svg', 1),
     (215, 111, '颜色', '白色', 129.00, 500, '/images/products/accessory-gan65.svg', 1),
     (216, 112, '颜色', '深灰色', 699.00, 260, '/images/products/accessory-mouse.svg', 1);
+
+INSERT INTO product (id, category_id, name, subtitle, brand, region, main_image, detail, publish_date, status, sales, rating) VALUES
+    (113, 1, '荣耀Magic6 Pro 5G手机', '青海湖电池，潜望长焦', '荣耀', '深圳', '/images/products/phone-huawei60.svg', '<p>第二代青海湖电池，5600mAh大容量，潜望式长焦支持百倍变焦。</p>', '2026-07-25 10:00:00', 1, 980, 4.6),
+    (114, 2, '华为MateBook X Pro 笔记本', '980g超轻，3.1K触控屏', '华为', '深圳', '/images/products/laptop-macbook.svg', '<p>980克超轻机身，3.1K原色触控屏，超级终端互联。</p>', '2026-07-24 10:00:00', 1, 420, 4.8),
+    (115, 3, '荣耀平板9 标准版', '12.1英寸120Hz护眼屏', '荣耀', '南京', '/images/products/tablet-xiaomi6.svg', '<p>12.1英寸2.5K护眼屏，120Hz高刷，八扬声器环绕音效。</p>', '2026-07-23 10:00:00', 1, 1560, 4.5),
+    (116, 4, '小米Redmi Buds 5 真无线耳机', '46dB主动降噪', '小米', '南京', '/images/products/earphone-edifier.svg', '<p>46dB深度主动降噪，蓝牙5.3，单次续航10小时。</p>', '2026-07-22 10:00:00', 1, 2680, 4.6),
+    (117, 5, '华为WATCH GT 5 智能手表', '两周长续航，北斗定位', '华为', '深圳', '/images/products/watch-apple9.svg', '<p>玄玑感知系统，两周长续航，五星北斗定位。</p>', '2026-07-21 10:00:00', 1, 1320, 4.7),
+    (118, 6, '倍思100W氮化镓充电器', '四口快充，桌面充电站', '倍思', '苏州', '/images/products/accessory-gan65.svg', '<p>100W大功率，2C2A四口输出，智能分配功率。</p>', '2026-07-20 10:00:00', 1, 3420, 4.7),
+    (119, 1, '三星Galaxy S24 Ultra 手机', '2亿像素，AI影像', '三星', '上海', '/images/products/phone-iphone15.svg', '<p>2亿像素主摄，Galaxy AI，钛金属边框。</p>', '2026-07-19 10:00:00', 1, 760, 4.6),
+    (120, 2, '惠普暗影精灵9 电竞本', '13代酷睿+RTX4060', '惠普', '北京', '/images/products/laptop-lenovo.svg', '<p>16.1英寸2.5K电竞屏，狂暴模式性能释放。</p>', '2026-07-18 10:00:00', 1, 890, 4.5);
+
+INSERT INTO product_sku (id, product_id, spec_name, spec_value, price, stock, image, status) VALUES
+    (217, 113, '版本', '12GB+256GB', 5699.00, 70, '/images/products/phone-huawei60.svg', 1),
+    (218, 114, '版本', '16GB+1TB', 11999.00, 30, '/images/products/laptop-macbook.svg', 1),
+    (219, 115, '版本', '8GB+128GB', 1499.00, 150, '/images/products/tablet-xiaomi6.svg', 1),
+    (220, 116, '颜色', '白色', 299.00, 500, '/images/products/earphone-edifier.svg', 1),
+    (221, 117, '表壳', '46mm曜金黑', 1488.00, 90, '/images/products/watch-apple9.svg', 1),
+    (222, 118, '颜色', '黑色', 199.00, 400, '/images/products/accessory-gan65.svg', 1),
+    (223, 119, '版本', '12GB+256GB', 9699.00, 45, '/images/products/phone-iphone15.svg', 1),
+    (224, 120, '版本', 'i9+RTX4060+16GB', 8999.00, 40, '/images/products/laptop-lenovo.svg', 1);

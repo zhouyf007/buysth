@@ -3,6 +3,7 @@ package com.shop.auth.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.shop.auth.dto.LoginRequest;
 import com.shop.auth.dto.LoginResponse;
+import com.shop.auth.dto.PasswordRequest;
 import com.shop.auth.dto.ProfileRequest;
 import com.shop.auth.dto.RegisterRequest;
 import com.shop.auth.dto.UserVO;
@@ -57,6 +58,7 @@ public class AuthService {
                 ? request.getUsername() : request.getNickname());
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
+        user.setAvatar(request.getAvatar());
         user.setStatus(1);
         userMapper.insert(user);
 
@@ -164,6 +166,19 @@ public class AuthService {
         return buildUserVO(user, findRoles(userId), findPermissions(userId));
     }
 
+    @Transactional
+    public void changePassword(Long userId, PasswordRequest request) {
+        SysUser user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(404, "用户不存在");
+        }
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new BizException("原密码不正确");
+        }
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userMapper.updateById(user);
+    }
+
     private void cacheToken(String token, String prefix, int expireHours) {
         Claims claims = jwtUtil.parse(token);
         long ttlSeconds = Duration.between(new Date().toInstant(), claims.getExpiration().toInstant()).getSeconds();
@@ -237,7 +252,7 @@ public class AuthService {
     }
 
     public void updateRoles(Long userId, List<Long> roleIds) {
-        userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
+        userRoleMapper.deleteByUserId(userId);
         if (roleIds != null) {
             roleIds.forEach(roleId -> {
                 SysUserRole link = new SysUserRole();

@@ -1,6 +1,7 @@
 package com.shop.api.feign;
 
 import com.shop.api.dto.ProductDTO;
+import com.shop.api.dto.SalesIncreaseRequest;
 import com.shop.api.dto.SkuDTO;
 import com.shop.api.dto.StockLockRequest;
 import com.shop.common.result.Result;
@@ -24,5 +25,7 @@ public interface ProductClient {
 
     @PostMapping("/internal/stock/release")
     Result<Boolean> releaseStock(@RequestBody StockLockRequest request);
-}
 
+    @PostMapping("/internal/sales/increase")
+    Result<Boolean> increaseSales(@RequestBody SalesIncreaseRequest request);
+}

@@ -1,6 +1,7 @@
 package com.shop.product.controller;
 
 import com.shop.api.dto.ProductDTO;
+import com.shop.api.dto.SalesIncreaseRequest;
 import com.shop.api.dto.SkuDTO;
 import com.shop.api.dto.StockLockRequest;
 import com.shop.common.result.Result;
@@ -39,5 +40,9 @@ public class InternalProductController {
     public Result<Boolean> release(@RequestBody StockLockRequest request) {
         return Result.ok(productService.releaseStock(request));
     }
-}
 
+    @PostMapping("/sales/increase")
+    public Result<Boolean> increaseSales(@RequestBody SalesIncreaseRequest request) {
+        return Result.ok(productService.increaseSales(request));
+    }
+}

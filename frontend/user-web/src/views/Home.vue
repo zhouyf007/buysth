@@ -12,7 +12,23 @@
           </div>
         </div>
         <div class="hero-visual">
-          <img src="/images/hero-devices.svg" alt="数码设备" />
+          <div class="carousel">
+            <img
+              v-for="(slide, i) in slides"
+              :key="i"
+              :src="slide.image"
+              :class="{ active: i === slideIndex }"
+              :alt="slide.title"
+            />
+            <div class="dots">
+              <button
+                v-for="(slide, i) in slides"
+                :key="'dot' + i"
+                :class="{ active: i === slideIndex }"
+                @click="slideIndex = i"
+              ></button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -22,11 +38,22 @@
         <div class="block-head">
           <h2>平台公告</h2>
         </div>
-        <div v-for="a in announcements" :key="a.id" class="announcement">
-          <span class="tag">{{ a.type === 'ACTIVITY' ? '活动' : '公告' }}</span>
-          <div>
-            <strong>{{ a.title }}</strong>
-            <p>{{ a.content }}</p>
+        <div class="announce-scroll">
+          <div class="announce-track">
+            <div v-for="a in announcements" :key="a.id" class="announcement">
+              <span class="tag">{{ a.type === 'ACTIVITY' ? '活动' : '公告' }}</span>
+              <div>
+                <strong>{{ a.title }}</strong>
+                <p>{{ a.content }}</p>
+              </div>
+            </div>
+            <div v-for="a in announcements" :key="'dup' + a.id" class="announcement">
+              <span class="tag">{{ a.type === 'ACTIVITY' ? '活动' : '公告' }}</span>
+              <div>
+                <strong>{{ a.title }}</strong>
+                <p>{{ a.content }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -67,7 +94,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { notifyApi, productApi, seckillApi } from '../api'
 import ProductCard from '../components/ProductCard.vue'
 
@@ -75,6 +102,14 @@ const categories = ref([])
 const hot = ref([])
 const announcements = ref([])
 const seckillProducts = ref([])
+const slides = [
+  { image: '/images/hero-devices.svg', title: '新品数码' },
+  { image: '/images/products/phone-xiaomi14.svg', title: '小米14' },
+  { image: '/images/products/earphone-sony.svg', title: '索尼降噪' },
+  { image: '/images/products/laptop-lenovo.svg', title: '拯救者电竞本' }
+]
+const slideIndex = ref(0)
+let slideTimer
 
 onMounted(async () => {
   try {
@@ -91,7 +126,12 @@ onMounted(async () => {
     const activity = page.records?.[0]
     seckillProducts.value = activity?.products?.slice(0, 3) || []
   } catch (e) { /* ignore */ }
+  slideTimer = setInterval(() => {
+    slideIndex.value = (slideIndex.value + 1) % slides.length
+  }, 3500)
 })
+
+onUnmounted(() => clearInterval(slideTimer))
 </script>
 
 <style scoped>
@@ -138,6 +178,52 @@ onMounted(async () => {
 .hero-visual img {
   width: 100%;
   display: block;
+}
+
+.carousel {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.carousel img {
+  display: none;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.carousel img.active {
+  display: block;
+  animation: fadeIn .5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dots button {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, .55);
+  cursor: pointer;
+}
+
+.dots button.active {
+  background: var(--primary);
 }
 
 .categories {
@@ -218,6 +304,24 @@ onMounted(async () => {
 
 .announcement:first-of-type {
   border-top: 0;
+}
+
+.announce-scroll {
+  height: 176px;
+  overflow: hidden;
+}
+
+.announce-track {
+  animation: scrollY 14s linear infinite;
+}
+
+.announce-scroll:hover .announce-track {
+  animation-play-state: paused;
+}
+
+@keyframes scrollY {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
 }
 
 .tag {

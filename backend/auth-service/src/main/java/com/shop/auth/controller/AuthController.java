@@ -2,6 +2,7 @@ package com.shop.auth.controller;
 
 import com.shop.auth.dto.LoginRequest;
 import com.shop.auth.dto.LoginResponse;
+import com.shop.auth.dto.PasswordRequest;
 import com.shop.auth.dto.ProfileRequest;
 import com.shop.auth.dto.RegisterRequest;
 import com.shop.auth.dto.UserVO;
@@ -61,5 +62,11 @@ public class AuthController {
     @PutMapping("/profile")
     public Result<UserVO> updateProfile(@RequestBody ProfileRequest request) {
         return Result.ok(authService.updateProfile(UserContext.getUserId(), request));
+    }
+
+    @PutMapping("/password")
+    public Result<Void> changePassword(@Valid @RequestBody PasswordRequest request) {
+        authService.changePassword(UserContext.getUserId(), request);
+        return Result.ok();
     }
 }

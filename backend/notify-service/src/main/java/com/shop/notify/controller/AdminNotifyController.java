@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -54,5 +57,16 @@ public class AdminNotifyController {
                                                       @RequestParam(required = false) Long userId) {
         return Result.ok(notifyService.adminMessages(current, size, userId));
     }
-}
 
+    @DeleteMapping("/messages/{id}")
+    public Result<Void> deleteMessage(@PathVariable Long id) {
+        notifyService.adminDeleteMessage(id);
+        return Result.ok();
+    }
+
+    @PostMapping("/messages/batch-delete")
+    public Result<Void> batchDelete(@RequestBody Map<String, List<Long>> body) {
+        notifyService.adminBatchDeleteMessages(body.get("ids"));
+        return Result.ok();
+    }
+}

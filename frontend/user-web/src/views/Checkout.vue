@@ -28,9 +28,16 @@
         <h2>结算</h2>
         <div class="row"><span>商品金额</span><span>¥{{ total }}</span></div>
         <div class="row"><span>优惠</span><span>-¥{{ discount }}</span></div>
-        <label class="promo">优惠码
-          <input v-model="promotionCode" class="input" placeholder="如 back-to-school" />
-        </label>
+        <div class="promo">
+          <span>优惠码</span>
+          <div class="promo-row">
+            <input v-model="promotionCode" class="input" placeholder="输入优惠码" />
+            <button class="btn btn-ghost" type="button" :disabled="checkingPromo" @click="applyPromo">
+              {{ checkingPromo ? '校验中' : '使用' }}
+            </button>
+          </div>
+          <p class="notice-text">{{ promoNotice }}</p>
+        </div>
         <div class="row pay"><span>应付</span><span class="price big">¥{{ payAmount }}</span></div>
         <button class="btn btn-primary submit" :disabled="submitting" @click="submit">提交订单</button>
         <p class="error-text">{{ error }}</p>
@@ -41,7 +48,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { orderApi, productApi } from '../api'
 
@@ -54,6 +61,8 @@ const promotionCode = ref('')
 const submitting = ref(false)
 const error = ref('')
 const discount = ref(0)
+const checkingPromo = ref(false)
+const promoNotice = ref('')
 
 const total = computed(() => lines.value.reduce((s, l) => s + Number(l.price) * l.quantity, 0).toFixed(2))
 const payAmount = computed(() => (Number(total.value) - Number(discount.value)).toFixed(2))
@@ -95,6 +104,10 @@ const submit = async () => {
     error.value = '请完整填写收货信息'
     return
   }
+  if (!/^1[3-9]\d{9}$/.test(address.value.receiverPhone)) {
+    error.value = '联系电话需为11位手机号'
+    return
+  }
   submitting.value = true
   error.value = ''
   try {
@@ -111,6 +124,42 @@ const submit = async () => {
     submitting.value = false
   }
 }
+
+const applyPromo = async () => {
+  promoNotice.value = ''
+  error.value = ''
+  if (!promotionCode.value.trim()) {
+    promoNotice.value = ''
+    error.value = '请输入优惠码'
+    return
+  }
+  checkingPromo.value = true
+  try {
+    const data = await orderApi.previewPromotion({
+      items: lines.value.map(l => ({ skuId: l.skuId, quantity: l.quantity })),
+      promotionCode: promotionCode.value.trim()
+    })
+    discount.value = Number(data.discountAmount).toFixed(2)
+    promoNotice.value = `优惠码已生效，立减 ¥${discount.value}`
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    checkingPromo.value = false
+  }
+}
+
+let promoTimer = null
+watch(promotionCode, () => {
+  clearTimeout(promoTimer)
+  if (!promotionCode.value.trim()) {
+    discount.value = 0
+    promoNotice.value = ''
+    return
+  }
+  promoTimer = setTimeout(applyPromo, 400)
+})
+
+onUnmounted(() => clearTimeout(promoTimer))
 
 onMounted(async () => {
   try {
@@ -228,6 +277,17 @@ onMounted(async () => {
   font-size: 13px;
   color: var(--muted);
   margin: 8px 0 4px;
+}
+
+.promo-row {
+  display: flex;
+  gap: 8px;
+}
+
+.notice-text {
+  color: #16a34a;
+  font-size: 13px;
+  margin: 4px 0 0;
 }
 
 .submit {

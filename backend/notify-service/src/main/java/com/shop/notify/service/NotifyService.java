@@ -1,6 +1,7 @@
 package com.shop.notify.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shop.api.dto.OrderInfoDTO;
 import com.shop.api.dto.SeckillOrderRequest;
@@ -117,6 +118,7 @@ public class NotifyService {
         Page<NotifyMessage> page = messageMapper.selectPage(new Page<>(current, size),
                 new LambdaQueryWrapper<NotifyMessage>()
                         .eq(NotifyMessage::getUserId, userId)
+                        .eq(NotifyMessage::getUserDeleted, 0)
                         .eq(readStatus != null, NotifyMessage::getReadStatus, readStatus)
                         .orderByDesc(NotifyMessage::getCreateTime));
         return PageResult.of(page);
@@ -125,6 +127,7 @@ public class NotifyService {
     public long unreadCount(Long userId) {
         Long count = messageMapper.selectCount(new LambdaQueryWrapper<NotifyMessage>()
                 .eq(NotifyMessage::getUserId, userId)
+                .eq(NotifyMessage::getUserDeleted, 0)
                 .eq(NotifyMessage::getReadStatus, 0));
         return count == null ? 0 : count;
     }
@@ -138,10 +141,48 @@ public class NotifyService {
         messageMapper.updateById(message);
     }
 
+    public void deleteUserMessage(Long userId, Long messageId) {
+        NotifyMessage message = messageMapper.selectById(messageId);
+        if (message == null || !message.getUserId().equals(userId)) {
+            throw new BizException(404, "消息不存在");
+        }
+        message.setUserDeleted(1);
+        messageMapper.updateById(message);
+    }
+
+    public void batchDeleteUserMessages(Long userId, List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        messageMapper.update(null, new LambdaUpdateWrapper<NotifyMessage>()
+                .eq(NotifyMessage::getUserId, userId)
+                .in(NotifyMessage::getId, ids)
+                .set(NotifyMessage::getUserDeleted, 1));
+    }
+
+    public void adminDeleteMessage(Long messageId) {
+        NotifyMessage message = messageMapper.selectById(messageId);
+        if (message == null) {
+            throw new BizException(404, "消息不存在");
+        }
+        message.setAdminDeleted(1);
+        messageMapper.updateById(message);
+    }
+
+    public void adminBatchDeleteMessages(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        messageMapper.update(null, new LambdaUpdateWrapper<NotifyMessage>()
+                .in(NotifyMessage::getId, ids)
+                .set(NotifyMessage::getAdminDeleted, 1));
+    }
+
     public PageResult<NotifyMessage> adminMessages(long current, long size, Long userId) {
         Page<NotifyMessage> page = messageMapper.selectPage(new Page<>(current, size),
                 new LambdaQueryWrapper<NotifyMessage>()
                         .eq(userId != null, NotifyMessage::getUserId, userId)
+                        .eq(NotifyMessage::getAdminDeleted, 0)
                         .orderByDesc(NotifyMessage::getCreateTime));
         return PageResult.of(page);
     }
@@ -206,4 +247,3 @@ public class NotifyService {
         }
     }
 }
-

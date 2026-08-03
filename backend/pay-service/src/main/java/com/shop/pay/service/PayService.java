@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -144,15 +145,35 @@ public class PayService {
         publishPaid(payment);
     }
 
-    public PageResult<Payment> adminPage(long current, long size, String keyword, String status) {
+    public PageResult<Payment> adminPage(long current, long size, String keyword, String status, Long userId) {
         Page<Payment> page = paymentMapper.selectPage(new Page<>(current, size),
                 new LambdaQueryWrapper<Payment>()
+                        .eq(userId != null, Payment::getUserId, userId)
+                        .eq(Payment::getAdminDeleted, 0)
                         .eq(status != null && !status.isBlank(), Payment::getStatus, status)
                         .and(keyword != null && !keyword.isBlank(), w -> w
                                 .like(Payment::getPayNo, keyword)
                                 .or().like(Payment::getOrderNo, keyword))
                         .orderByDesc(Payment::getCreateTime));
         return PageResult.of(page);
+    }
+
+    public void adminDeletePayment(Long id) {
+        Payment payment = paymentMapper.selectById(id);
+        if (payment == null) {
+            throw new BizException(404, "支付单不存在");
+        }
+        payment.setAdminDeleted(1);
+        paymentMapper.updateById(payment);
+    }
+
+    public void adminBatchDelete(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        paymentMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Payment>()
+                .in(Payment::getId, ids)
+                .set(Payment::getAdminDeleted, 1));
     }
 
     private void publishPaid(Payment payment) {

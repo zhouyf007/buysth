@@ -3,7 +3,7 @@
     <div class="seckill-head">
       <div>
         <h1>{{ type === 'SECKILL' ? '限时秒杀' : '优惠活动' }}</h1>
-        <p class="muted">{{ type === 'SECKILL' ? 'Redis 预扣库存 + MQ 异步下单，抢到就是赚到' : '结算时输入活动优惠码即可享受折扣' }}</p>
+        <p class="muted">{{ type === 'SECKILL' ? '限时限量，抢完即止' : '支付时输入活动优惠码即可享受折扣' }}</p>
       </div>
       <RouterLink v-if="type === 'PROMOTION'" to="/seckill" class="btn btn-ghost">查看秒杀</RouterLink>
       <RouterLink v-else to="/promotions" class="btn btn-ghost">查看优惠</RouterLink>

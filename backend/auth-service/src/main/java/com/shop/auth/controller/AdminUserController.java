@@ -2,6 +2,7 @@ package com.shop.auth.controller;
 
 import com.shop.auth.entity.SysUser;
 import com.shop.auth.service.AdminService;
+import com.shop.common.context.UserContext;
 import com.shop.common.result.PageResult;
 import com.shop.common.result.Result;
 import lombok.RequiredArgsConstructor;
@@ -38,8 +39,12 @@ public class AdminUserController {
 
     @PutMapping("/{id}/role")
     public Result<Void> updateRole(@PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
-        adminService.updateUserRole(id, body.get("roleIds"));
+        adminService.updateUserRole(id, body.get("roleIds"), UserContext.getRoles());
         return Result.ok();
     }
-}
 
+    @GetMapping("/{id}/roles")
+    public Result<List<Long>> roles(@PathVariable Long id) {
+        return Result.ok(adminService.userRoleIds(id));
+    }
+}

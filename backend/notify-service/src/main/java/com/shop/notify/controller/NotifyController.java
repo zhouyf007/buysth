@@ -8,8 +8,10 @@ import com.shop.notify.entity.NotifyMessage;
 import com.shop.notify.service.NotifyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,5 +48,16 @@ public class NotifyController {
         notifyService.markRead(UserContext.getUserId(), id);
         return Result.ok();
     }
-}
 
+    @DeleteMapping("/messages/{id}")
+    public Result<Void> deleteMessage(@PathVariable Long id) {
+        notifyService.deleteUserMessage(UserContext.getUserId(), id);
+        return Result.ok();
+    }
+
+    @PostMapping("/messages/batch-delete")
+    public Result<Void> batchDelete(@RequestBody Map<String, List<Long>> body) {
+        notifyService.batchDeleteUserMessages(UserContext.getUserId(), body.get("ids"));
+        return Result.ok();
+    }
+}

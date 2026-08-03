@@ -85,9 +85,11 @@ public class LogisticsService {
         return toVO(shipment);
     }
 
-    public PageResult<ShipmentVO> adminPage(long current, long size, String keyword, String status) {
+    public PageResult<ShipmentVO> adminPage(long current, long size, String keyword, String status, Long userId) {
         Page<Shipment> page = shipmentMapper.selectPage(new Page<>(current, size),
                 new LambdaQueryWrapper<Shipment>()
+                        .eq(userId != null, Shipment::getUserId, userId)
+                        .eq(Shipment::getAdminDeleted, 0)
                         .eq(status != null && !status.isBlank(), Shipment::getStatus, status)
                         .and(keyword != null && !keyword.isBlank(), w -> w
                                 .like(Shipment::getOrderNo, keyword)
@@ -96,6 +98,24 @@ public class LogisticsService {
                         .orderByDesc(Shipment::getCreateTime));
         return PageResult.of(page.getRecords().stream().map(this::toVO).collect(Collectors.toList()),
                 page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    public void adminDeleteShipment(Long id) {
+        Shipment shipment = shipmentMapper.selectById(id);
+        if (shipment == null) {
+            throw new BizException(404, "运单不存在");
+        }
+        shipment.setAdminDeleted(1);
+        shipmentMapper.updateById(shipment);
+    }
+
+    public void adminBatchDelete(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        shipmentMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Shipment>()
+                .in(Shipment::getId, ids)
+                .set(Shipment::getAdminDeleted, 1));
     }
 
     @Transactional
@@ -171,4 +191,3 @@ public class LogisticsService {
         return vo;
     }
 }
-

@@ -18,10 +18,10 @@
             <el-form-item label="副标题"><el-input v-model="form.subtitle" /></el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="品牌"><el-input v-model="form.brand" /></el-form-item>
+            <el-form-item label="品牌" required><el-input v-model="form.brand" /></el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="地域"><el-input v-model="form.region" placeholder="如 深圳" /></el-form-item>
+            <el-form-item label="地域" required><el-input v-model="form.region" placeholder="如 深圳" /></el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="上新日期">
@@ -39,7 +39,7 @@
           </el-col>
         </el-row>
 
-        <el-form-item label="主图">
+        <el-form-item label="主图" required>
           <div class="upload-row">
             <el-upload :show-file-list="false" :http-request="uploadImage">
               <el-button>上传图片</el-button>
@@ -54,16 +54,16 @@
 
         <el-divider>SKU 规格</el-divider>
         <el-table :data="form.skus">
-          <el-table-column label="规格名">
+          <el-table-column label="规格名" required>
             <template #default="{ row }"><el-input v-model="row.specName" /></template>
           </el-table-column>
-          <el-table-column label="规格值">
+          <el-table-column label="规格值" required>
             <template #default="{ row }"><el-input v-model="row.specValue" /></template>
           </el-table-column>
-          <el-table-column label="价格" width="160">
+          <el-table-column label="价格" width="160" required>
             <template #default="{ row }"><el-input-number v-model="row.price" :min="0" :precision="2" /></template>
           </el-table-column>
-          <el-table-column label="库存" width="160">
+          <el-table-column label="库存" width="160" required>
             <template #default="{ row }"><el-input-number v-model="row.stock" :min="0" /></template>
           </el-table-column>
           <el-table-column label="操作" width="90">
@@ -114,11 +114,33 @@ const save = async () => {
     ElMessage.warning('请填写商品名称和分类')
     return
   }
+  if (!form.brand || !form.region || !form.mainImage) {
+    ElMessage.warning('品牌、地域、主图为必填项')
+    return
+  }
+  const skus = form.skus.filter(s => s.specValue)
+  if (!skus.length) {
+    ElMessage.warning('请至少填写一个SKU规格')
+    return
+  }
+  for (const s of skus) {
+    if (!s.specName || !s.specValue || s.price === null || s.stock === null) {
+      ElMessage.warning('SKU的规格名、规格值、价格、库存均为必填')
+      return
+    }
+  }
   saving.value = true
   try {
     const payload = { ...form }
-    payload.publishDate = form.publishDate ? new Date(form.publishDate).toLocaleString('sv-SE').replace('T', ' ') : undefined
-    payload.skus = form.skus.filter(s => s.specValue)
+    if (form.publishDate) {
+      const d = new Date(form.publishDate)
+      const pad = n => String(n).padStart(2, '0')
+      payload.publishDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+        `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+    } else {
+      payload.publishDate = undefined
+    }
+    payload.skus = skus
     if (id) {
       await productApi.update(id, payload)
     } else {
@@ -169,4 +191,3 @@ onMounted(async () => {
   margin-top: 20px;
 }
 </style>
-

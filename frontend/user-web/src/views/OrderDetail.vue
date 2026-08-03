@@ -96,6 +96,10 @@ const load = async () => {
 
 const saveAddress = async () => {
   error.value = ''
+  if (!/^1[3-9]\d{9}$/.test(address.value.receiverPhone)) {
+    error.value = '联系电话需为11位手机号'
+    return
+  }
   try {
     await orderApi.address(order.value.orderNo, address.value)
     await load()
@@ -262,6 +266,8 @@ onMounted(load)
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 720px) {
